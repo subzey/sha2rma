@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Sha2rma</title>
+	<style>
+		input[name=digest] {
+			display: block;
+			width: 100%;
+			font: 2vw monospace;
+		}
+		#output {
+			font: 5vw monospace;
+			margin: 1em 0;
+		}
+	</style>
+</head>
+<body>
+	<form>
+		<input name="digest" placeholder="sha256$░░░░░░░░░░░░$░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░" autocomplete="off" value="sha256$uLxy0oj2zcsY$BFVPdTrs9n7Arw/su6/KWw/P5bp1xSLhkFDl0H9eLD8=">
+		<input type="submit">
+		<pre id="output"></pre>
+		<pre id="log"></pre>
+	</form>
+	<script type="module">
+import { parse } from './parse-digest.js';
+import { main } from './shabrute.js';
+
+document.querySelector('form').addEventListener('submit', (e) => {
+	e.preventDefault();
+	document.querySelector('[type=submit]').disabled = true;
+	try {
+		const { salt, hash } = parse(document.querySelector('[name=digest]').value);
+		const now = Date.now();
+		const pwd = main(salt, hash, 5);
+		document.querySelector('#output').textContent = pwd;
+		document.querySelector('#log').textContent = `${Date.now() - now} ms elapsed`;
+	} catch (e) {
+		document.querySelector('#log').textContent = e.message || e;
+	}
+});
+
+	// document.querySelector('[type=submit]').click();
+
+	</script>
+</body>
+</html>

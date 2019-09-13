@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Salted SHA generator</title>
+	<style>
+		html {
+			font: 2vw sans-serif;
+		}
+
+		input {
+			font: 2vw monospace;
+		}
+		input[name=pwd] {
+			font: 5vw sans-serif;
+		}
+
+		input.wide {
+			box-sizing: border-box;
+			width: 100%;
+		}
+
+		input.invalid {
+			background: #f66;
+		}
+		input.valid {
+			background: #6f6;
+		}
+
+		table {
+			width: 100%;
+		}
+		th {
+			white-space: nowrap;
+			text-align: right;
+		}
+		td {
+			width: 100%;
+		}
+		#update {
+			font: inherit;
+		}
+	</style>
+</head>
+<body>
+	<table>
+		<tr>
+			<th><label>Password</label></th>
+			<td><input class="wide" name="pwd" placeholder="Latin upper/lower, digits, specials" maxlength="5" minlength="5" autofocus pattern="[\x21-\x7e]+"></td>
+		</tr>
+		<tr>
+			<th><label>Salt <button id="update">🔃</button></label></th>
+			<td><input class="wide" readonly name="salt"></td>
+		</tr>
+		<tr>
+			<th><label>Salted SHA256</label></th>
+			<td><input class="wide" readonly name="digest"></td>
+		</tr>
+	</table>
+	<script>
+		const pwdEl = document.querySelector('[name=pwd]');
+		const saltEl = document.querySelector('[name=salt]');
+		const digestEl = document.querySelector('[name=digest]');
+
+		function base64(uia) {
+			return btoa(String.fromCharCode(...uia));
+		}
+
+		function saltedSha(salt, pwd) {
+			const salted = new Uint8Array(salt.length + pwd.length);
+			salted.set(salt, 0);
+			salted.set(pwd, salt.length);
+			return crypto.subtle.digest('SHA-256', salted).then(ab => new Uint8Array(ab));
+		}
+
+		async function update() {
+			digestEl.value = saltEl.value = '';
+
+			if (/[^\x21-\x7e]/.test(pwdEl.value)) {
+				digestEl.placeholder = 'Latin uppercase and lowercase, digits and specials only, please';
+				pwdEl.classList.add('invalid');
+				pwdEl.classList.remove('valid');
+				return;
+			}
+
+			if (pwdEl.value.length !== 5) {
+				digestEl.placeholder = '';
+				pwdEl.classList.remove('invalid');
+				pwdEl.classList.remove('valid');
+				return;
+			}
+
+			pwdEl.classList.remove('invalid');
+			pwdEl.classList.add('valid');
+			digestEl.placeholder = 'Hashing...';
+
+			const salt = crypto.getRandomValues(new Uint8Array(9));
+			const pwd = new TextEncoder().encode(pwdEl.value);
+			const digest = await saltedSha(salt, pwd);
+
+			saltEl.value = base64(salt);
+			digestEl.value = `sha256$${ base64(salt) }$${ base64(digest) }`;
+		}
+
+		pwdEl.addEventListener('input', update);
+		document.querySelector('#update').addEventListener('click', (e) => {
+			e.preventDefault();
+			update();
+		});
+
+	</script>
+</body>
+</html>
