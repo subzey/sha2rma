@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>SHA hasher</title>
+	<style>
+		html {
+			font: 1.9vw sans-serif;
+		}
+
+		input {
+			font: 1.9vw monospace;
+		}
+		input[name=pwd] {
+			font: 5vw sans-serif;
+		}
+
+		input.wide {
+			box-sizing: border-box;
+			width: 100%;
+		}
+
+		input.invalid {
+			background: #f66;
+		}
+		input.valid {
+			background: #6f6;
+		}
+
+		table {
+			width: 100%;
+		}
+		th {
+			white-space: nowrap;
+			text-align: right;
+		}
+		td {
+			width: 100%;
+		}
+		#update, #hide {
+			font: inherit;
+		}
+		.hidden {
+			visibility: hidden;
+		}
+	</style>
+</head>
+<body>
+	<table>
+		<tr>
+			<th><label>Номер паспорта <button id="hide">👁️</button></label></th>
+			<td><input class="wide" name="pwd" placeholder="10 цифр без пробелов" maxlength="10" minlength="10" autofocus pattern="[0-9]+"></td>
+		</tr>
+		<tr>
+			<th><label>SHA256</label></th>
+			<td><input class="wide" readonly name="digest"></td>
+		</tr>
+	</table>
+	<script>
+		const pwdEl = document.querySelector('[name=pwd]');
+		const digestEl = document.querySelector('[name=digest]');
+
+		function hex(uia) {
+			return Array.from(uia).map(v => v.toString(16).padStart(2, '0')).join('');
+		}
+
+		function unsaltedSha(pwd) {
+			return crypto.subtle.digest('SHA-256', pwd).then(ab => new Uint8Array(ab));
+		}
+
+		async function update() {
+			digestEl.value = '';
+
+			if (/[^\x21-\x7e]/.test(pwdEl.value)) {
+				digestEl.placeholder = 'Только цифры, пожалуйста';
+				pwdEl.classList.add('invalid');
+				pwdEl.classList.remove('valid');
+				return;
+			}
+
+			if (pwdEl.value.length !== 10) {
+				digestEl.placeholder = '';
+				pwdEl.classList.remove('invalid');
+				pwdEl.classList.remove('valid');
+				return;
+			}
+
+			pwdEl.classList.remove('invalid');
+			pwdEl.classList.add('valid');
+			digestEl.placeholder = 'Хэшируем...';
+
+			const pwd = new TextEncoder().encode(pwdEl.value);
+			const digest = await unsaltedSha(pwd);
+			digestEl.value = hex(digest);
+		}
+
+		pwdEl.addEventListener('input', update);
+		document.querySelector('#update').addEventListener('click', (e) => {
+			e.preventDefault();
+			update();
+		});
+		document.querySelector('#hide').addEventListener('click', (e) => {
+			e.preventDefault();
+			pwdEl.classList.toggle('hidden');
+		});
+
+	</script>
+</body>
+</html>
